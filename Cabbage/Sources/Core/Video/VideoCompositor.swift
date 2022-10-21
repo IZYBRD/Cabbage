@@ -14,58 +14,71 @@ open class VideoCompositor: NSObject, AVFoundation.AVVideoCompositing  {
     public static var ciContext: CIContext = CIContext()
     private let renderContextQueue: DispatchQueue = DispatchQueue(label: "cabbage.videocore.rendercontextqueue")
     private let renderingQueue: DispatchQueue = DispatchQueue(label: "cabbage.videocore.renderingqueue")
-    private var renderContextDidChange = false
     private var shouldCancelAllRequests = false
     private var renderContext: AVVideoCompositionRenderContext?
     
     public var sourcePixelBufferAttributes: [String : Any]? =
-        [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
-         String(kCVPixelBufferOpenGLESCompatibilityKey): true,
-         String(kCVPixelBufferMetalCompatibilityKey): true]
+    [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+     String(kCVPixelBufferOpenGLESCompatibilityKey): true,
+     String(kCVPixelBufferMetalCompatibilityKey): true]
     
     public var requiredPixelBufferAttributesForRenderContext: [String : Any] =
-        [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32BGRA,
-         String(kCVPixelBufferOpenGLESCompatibilityKey): true,
-         String(kCVPixelBufferMetalCompatibilityKey): true]
+    [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32BGRA,
+     String(kCVPixelBufferOpenGLESCompatibilityKey): true,
+     String(kCVPixelBufferMetalCompatibilityKey): true]
     
-    open func renderContextChanged(_ newRenderContext: AVVideoCompositionRenderContext) {
-        renderContextQueue.sync(execute: { [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.renderContext = newRenderContext
-            strongSelf.renderContextDidChange = true
-        })
+    /// Maintain the state of render context changes.
+    private var internalRenderContextDidChange = false
+    
+    /// Actual state of render context changes.
+    private var renderContextDidChange: Bool {
+        get { renderContextQueue.sync { internalRenderContextDidChange } }
+        set { renderContextQueue.sync { internalRenderContextDidChange = newValue } }
     }
     
-    public enum PixelBufferRequestError: Error {
+    override init() {
+        super.init()
+    }
+    
+    public func renderContextChanged(_ newRenderContext: AVVideoCompositionRenderContext) {
+        renderContextQueue.sync {
+            renderContext = newRenderContext
+        }
+        renderContextDidChange = true
+    }
+    
+    enum PixelBufferRequestError: Error {
         case newRenderedPixelBufferForRequestFailure
     }
     
-    open func startRequest(_ request: AVAsynchronousVideoCompositionRequest) {
-        renderingQueue.async(execute: { [weak self] in
-            guard let strongSelf = self else { return }
-            if strongSelf.shouldCancelAllRequests {
-                request.finishCancelledRequest()
-            } else {
-                autoreleasepool {
-                    if let resultPixels = strongSelf.newRenderedPixelBufferForRequest(request: request) {
-                        request.finish(withComposedVideoFrame: resultPixels)
-                    } else {
+    public func startRequest(_ request: AVAsynchronousVideoCompositionRequest) {
+        autoreleasepool {
+            renderingQueue.async {
+                if self.shouldCancelAllRequests {
+                    request.finishCancelledRequest()
+                } else {
+                    guard let resultPixels = self.newRenderedPixelBufferForRequest(request) else {
                         request.finish(with: PixelBufferRequestError.newRenderedPixelBufferForRequestFailure)
+                        return
                     }
+                    
+                    request.finish(withComposedVideoFrame: resultPixels)
                 }
             }
-        })
-    }
-    
-    open func cancelAllPendingVideoCompositionRequests() {
-        shouldCancelAllRequests = true
-        renderingQueue.async(flags: .barrier) { [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.shouldCancelAllRequests = false
         }
     }
     
-    open func newRenderedPixelBufferForRequest(request: AVAsynchronousVideoCompositionRequest) -> CVPixelBuffer? {
+    public func cancelAllPendingVideoCompositionRequests() {
+        renderingQueue.sync {
+            shouldCancelAllRequests = true
+        }
+        renderingQueue.async {
+            self.shouldCancelAllRequests = false
+        }
+    }
+    
+    // MARK: - Private
+    func newRenderedPixelBufferForRequest(_ request: AVAsynchronousVideoCompositionRequest) -> CVPixelBuffer? {
         guard let outputPixels = renderContext?.newPixelBuffer() else { return nil }
         guard let instruction = request.videoCompositionInstruction as? VideoCompositionInstruction else {
             return nil

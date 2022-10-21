@@ -47,15 +47,14 @@ public class CompositionGenerator {
         return imageGenerator
     }
     
-    public func buildExportSession(presetName: String) -> AVAssetExportSession? {
+    public func buildExportSession(presetName: String, outputDirectory: URL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).last!) -> AVAssetExportSession? {
         let composition = buildComposition()
         let exportSession = AVAssetExportSession.init(asset: composition, presetName: presetName)
         exportSession?.videoComposition = buildVideoComposition()
         exportSession?.audioMix = buildAudioMix()
         exportSession?.outputURL = {
-            let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).last!
             let filename = ProcessInfo.processInfo.globallyUniqueString + ".mp4"
-            return documentDirectory.appendingPathComponent(filename)
+            return outputDirectory.appendingPathComponent(filename)
         }()
         exportSession?.outputFileType = AVFileType.mp4
         return exportSession
