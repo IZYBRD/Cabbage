@@ -50,6 +50,7 @@
 		5FE63CC721A0EFAD006FD15A /* AVAssetReaderImageResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE63CC621A0EFAD006FD15A /* AVAssetReaderImageResource.swift */; };
 		5FE63CC921A1B131006FD15A /* AVAssetReverseImageResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FE63CC821A1B131006FD15A /* AVAssetReverseImageResource.swift */; };
 		5FFDD53D21C4E34500AD08E5 /* 853.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 5FFDD53C21C4E34400AD08E5 /* 853.mp4 */; };
+		D4756CE82926D81B006E27AB /* AVURLAssetTrackResource.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4756CE72926D81B006E27AB /* AVURLAssetTrackResource.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -98,6 +99,7 @@
 		5FE63CC621A0EFAD006FD15A /* AVAssetReaderImageResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVAssetReaderImageResource.swift; sourceTree = "<group>"; };
 		5FE63CC821A1B131006FD15A /* AVAssetReverseImageResource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVAssetReverseImageResource.swift; sourceTree = "<group>"; };
 		5FFDD53C21C4E34400AD08E5 /* 853.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 853.mp4; sourceTree = "<group>"; };
+		D4756CE72926D81B006E27AB /* AVURLAssetTrackResource.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AVURLAssetTrackResource.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -122,6 +124,7 @@
 				5F4645A2210C71790013ADC3 /* AVAssetTrackResource.swift */,
 				5FE63CC621A0EFAD006FD15A /* AVAssetReaderImageResource.swift */,
 				5FE63CC821A1B131006FD15A /* AVAssetReverseImageResource.swift */,
+				D4756CE72926D81B006E27AB /* AVURLAssetTrackResource.swift */,
 			);
 			path = Resource;
 			sourceTree = "<group>";
@@ -370,6 +373,7 @@
 				5F4645AA210C71790013ADC3 /* CGMathFunctions.swift in Sources */,
 				5F4645A5210C71790013ADC3 /* VideoCompositionInstruction.swift in Sources */,
 				5F4645A6210C71790013ADC3 /* AudioProcessingTapHolder.swift in Sources */,
+				D4756CE82926D81B006E27AB /* AVURLAssetTrackResource.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
