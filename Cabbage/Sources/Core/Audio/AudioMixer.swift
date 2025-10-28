@@ -8,6 +8,7 @@
 
 import AVFoundation
 import Accelerate
+import CoreAudio
 
 public class AudioMixer {
     public static func changeVolume(for bufferList: UnsafeMutablePointer<AudioBufferList>, volume: Float) {

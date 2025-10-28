@@ -18,12 +18,19 @@ open class HDRVideoCompositor: VideoCompositor  {
     
     public override init() {
         super.init()
+#if targetEnvironment(macCatalyst)
+        sourcePixelBufferAttributes = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr10BiPlanarFullRange,
+                                       String(kCVPixelBufferMetalCompatibilityKey): true];
+        requiredPixelBufferAttributesForRenderContext = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr10BiPlanarFullRange,
+                                                         String(kCVPixelBufferMetalCompatibilityKey): true];
+#else
         sourcePixelBufferAttributes = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr10BiPlanarFullRange,
                                        String(kCVPixelBufferOpenGLESCompatibilityKey): true,
                                        String(kCVPixelBufferMetalCompatibilityKey): true];
         requiredPixelBufferAttributesForRenderContext = [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr10BiPlanarFullRange,
                                                          String(kCVPixelBufferOpenGLESCompatibilityKey): true,
                                                          String(kCVPixelBufferMetalCompatibilityKey): true];
+#endif
     }
 
 }

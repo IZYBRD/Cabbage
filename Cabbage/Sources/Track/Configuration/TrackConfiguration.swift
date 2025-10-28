@@ -13,13 +13,19 @@ public struct VideoConfigurationEffectInfo {
     public var time = CMTime.zero
     public var renderSize = CGSize.zero
     public var timeRange = CMTimeRange.zero
+    
+    public init(time: CMTime, renderSize: CGSize, timeRange: CMTimeRange) {
+        self.time = time
+        self.renderSize = renderSize
+        self.timeRange = timeRange
+    }
 }
 
 public protocol VideoConfigurationProtocol: NSCopying {
     func applyEffect(to sourceImage: CIImage, info: VideoConfigurationEffectInfo) -> CIImage
 }
 
-public class VideoConfiguration: NSObject, VideoConfigurationProtocol {
+open class VideoConfiguration: NSObject, VideoConfigurationProtocol {
     
     public static func createDefaultConfiguration() -> VideoConfiguration {
         return VideoConfiguration()
@@ -55,7 +61,7 @@ public class VideoConfiguration: NSObject, VideoConfigurationProtocol {
     
     // MARK: - VideoConfigurationProtocol
     
-    public func applyEffect(to sourceImage: CIImage, info: VideoConfigurationEffectInfo) -> CIImage {
+    open func applyEffect(to sourceImage: CIImage, info: VideoConfigurationEffectInfo) -> CIImage {
         var finalImage = sourceImage
 
         if let userTransform = self.transform {
@@ -70,11 +76,11 @@ public class VideoConfiguration: NSObject, VideoConfigurationProtocol {
         switch contentMode {
         case .aspectFit:
             let transform = CGAffineTransform.transform(by: finalImage.extent, aspectFitInRect: frame)
-            finalImage = finalImage.transformed(by: transform).cropped(to: frame)
+            finalImage = finalImage.transformed(by: transform) //.cropped(to: frame)
             break
         case .aspectFill:
             let transform = CGAffineTransform.transform(by: finalImage.extent, aspectFillRect: frame)
-            finalImage = finalImage.transformed(by: transform).cropped(to: frame)
+            finalImage = finalImage.transformed(by: transform) //.cropped(to: frame)
             break
         case .custom:
             var transform = CGAffineTransform(scaleX: frame.size.width / sourceImage.extent.size.width, y: frame.size.height / sourceImage.extent.size.height)

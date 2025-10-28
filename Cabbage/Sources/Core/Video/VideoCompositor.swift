@@ -14,19 +14,32 @@ open class VideoCompositor: NSObject, AVFoundation.AVVideoCompositing  {
     public static var ciContext: CIContext = CIContext()
     private let renderContextQueue: DispatchQueue = DispatchQueue(label: "cabbage.videocore.rendercontextqueue")
     private let renderingQueue: DispatchQueue = DispatchQueue(label: "cabbage.videocore.renderingqueue")
+    //private let renderingQueue: DispatchQueue = DispatchQueue(label: "cabbage.videocore.renderingqueue", attributes: [.concurrent])
     private var renderContextDidChange = false
     private var shouldCancelAllRequests = false
     private var renderContext: AVVideoCompositionRenderContext?
     
+#if targetEnvironment(macCatalyst)
+    public var sourcePixelBufferAttributes: [String : Any]? =
+        [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
+         String(kCVPixelBufferMetalCompatibilityKey): true]
+#else
     public var sourcePixelBufferAttributes: [String : Any]? =
         [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
          String(kCVPixelBufferOpenGLESCompatibilityKey): true,
          String(kCVPixelBufferMetalCompatibilityKey): true]
+#endif
     
+#if targetEnvironment(macCatalyst)
+    public var requiredPixelBufferAttributesForRenderContext: [String : Any] =
+        [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32BGRA,
+         String(kCVPixelBufferMetalCompatibilityKey): true]
+#else
     public var requiredPixelBufferAttributesForRenderContext: [String : Any] =
         [String(kCVPixelBufferPixelFormatTypeKey): kCVPixelFormatType_32BGRA,
          String(kCVPixelBufferOpenGLESCompatibilityKey): true,
          String(kCVPixelBufferMetalCompatibilityKey): true]
+#endif
     
     open func renderContextChanged(_ newRenderContext: AVVideoCompositionRenderContext) {
         renderContextQueue.sync(execute: { [weak self] in
