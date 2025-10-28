@@ -8,7 +8,7 @@
 
 import AVFoundation
 
-public class CompositionGenerator {
+public class CompositionGenerator: NSObject, AVVideoCompositionValidationHandling {
     
     // MARK: - Public
     public var timeline: Timeline {
@@ -155,6 +155,9 @@ public class CompositionGenerator {
                                     if intersection.duration.seconds > 0 {
                                         return false
                                     }
+                                    if CMTimeCompare(segment.timeMapping.target.end, provider.timeRange.start) == 0 {
+                                        return false
+                                    }
                                 }
                             }
                             return true
@@ -218,6 +221,11 @@ public class CompositionGenerator {
             layerInstructions.append(layerInstruction)
         }
         
+        var layerInstructionsOrderMap = [ObjectIdentifier : Int]()
+        for (i, layerInstruction) in layerInstructions.enumerated() {
+            layerInstructionsOrderMap[ObjectIdentifier(layerInstruction)] = i
+        }
+        
         layerInstructions.sort { (left, right) -> Bool in
             return left.timeRange.start < right.timeRange.start
         }
@@ -230,7 +238,9 @@ public class CompositionGenerator {
             let trackIDs = slice.1.map({ $0.trackID })
             let instruction = VideoCompositionInstruction(theSourceTrackIDs: trackIDs as [NSValue], forTimeRange: slice.0)
             instruction.backgroundColor = timeline.backgroundColor
-            instruction.layerInstructions = slice.1
+            instruction.layerInstructions = slice.1.sorted(by: { left, right in
+                return layerInstructionsOrderMap[ObjectIdentifier(left)]! < layerInstructionsOrderMap[ObjectIdentifier(right)]!
+            })
             instruction.passingThroughVideoCompositionProvider = timeline.passingThroughVideoCompositionProvider
             instruction.mainTrackIDs = mainTrackIDs.filter({ trackIDs.contains($0) })
             return instruction
@@ -241,6 +251,17 @@ public class CompositionGenerator {
         videoComposition.renderSize = self.timeline.renderSize
         videoComposition.instructions = instructions
         videoComposition.customVideoCompositorClass = VideoCompositor.self
+        
+        if #available(iOS 16.0, *) {
+            videoComposition.determineValidity(for: self.composition, timeRange: CMTimeRange(start: .zero, duration: self.composition!.duration), validationDelegate: self) { finish, error in
+                if let error = error {
+                    NSLog("composition determineValidity, finish = \(finish), error = \(error.localizedDescription)")
+                }
+            }
+        } else {
+            // Fallback on earlier versions
+        }
+        
         self.videoComposition = videoComposition
         self.needRebuildVideoComposition = false
         return videoComposition
@@ -389,6 +410,26 @@ public class CompositionGenerator {
         }
     }
     
+    public func videoComposition(_ videoComposition: AVVideoComposition, shouldContinueValidatingAfterFindingEmptyTimeRange timeRange: CMTimeRange) -> Bool {
+        NSLog("composition invalid: emptyTimeRange = \(timeRange)")
+        return true
+    }
+    
+    public func videoComposition(_ videoComposition: AVVideoComposition, shouldContinueValidatingAfterFindingInvalidTimeRangeIn videoCompositionInstruction: AVVideoCompositionInstructionProtocol) -> Bool {
+        NSLog("composition invalid: InvalidTimeRangeIn instruction = \(videoCompositionInstruction)")
+        return true
+    }
+
+    public func videoComposition(_ videoComposition: AVVideoComposition, shouldContinueValidatingAfterFindingInvalidValueForKey key: String) -> Bool {
+        NSLog("composition invalid: InvalidValueForKey key = \(key)")
+        return true
+    }
+    
+    public func videoComposition(_ videoComposition: AVVideoComposition, shouldContinueValidatingAfterFindingInvalidTrackIDIn videoCompositionInstruction: AVVideoCompositionInstructionProtocol, layerInstruction: AVVideoCompositionLayerInstruction, asset: AVAsset) -> Bool {
+        NSLog("composition invalid: InvalidTrackIDIn instruction = \(videoCompositionInstruction)")
+        return true
+    }
+    
 }
 
 // MARK: -
@@ -435,5 +476,3 @@ extension CMTimeRange {
         return "{\(String(format: "%.3f", start.seconds)), \(String(format: "%.3f", duration.seconds))}"
     }
 }
-
-

@@ -23,13 +23,12 @@ public class AudioProcessingTapHolder: NSObject, NSCopying {
             prepare: tapPrepare,
             unprepare: tapUnprepare,
             process: tapProcess)
-        var tap: Unmanaged<MTAudioProcessingTap>?
+        var tap: MTAudioProcessingTap?
         let err = MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &tap)
         if err != noErr {
             Log.error("error: failed to create audioProcessingTap")
         }
-        self.tap = tap?.takeRetainedValue()
-        
+        self.tap = tap
     }
     
     // MARK: - Handler

@@ -29,13 +29,13 @@ open class VideoCompositor: NSObject, AVFoundation.AVVideoCompositing  {
     
     /// Maintain the state of render context changes.
     private var internalRenderContextDidChange = false
-    
+
     /// Actual state of render context changes.
     private var renderContextDidChange: Bool {
         get { renderContextQueue.sync { internalRenderContextDidChange } }
         set { renderContextQueue.sync { internalRenderContextDidChange = newValue } }
     }
-    
+
     override init() {
         super.init()
     }
@@ -46,7 +46,7 @@ open class VideoCompositor: NSObject, AVFoundation.AVVideoCompositing  {
         }
         renderContextDidChange = true
     }
-    
+
     enum PixelBufferRequestError: Error {
         case newRenderedPixelBufferForRequestFailure
     }
@@ -61,7 +61,7 @@ open class VideoCompositor: NSObject, AVFoundation.AVVideoCompositing  {
                         request.finish(with: PixelBufferRequestError.newRenderedPixelBufferForRequestFailure)
                         return
                     }
-                    
+
                     request.finish(withComposedVideoFrame: resultPixels)
                 }
             }

@@ -77,10 +77,10 @@ open class VideoCompositionInstruction: NSObject, AVVideoCompositionInstructionP
                 let sourcePixel2 = request.sourceFrame(byTrackID: layerInstruction2.trackID) {
                 
                 let image1 = generateImage(from: sourcePixel1)
-                let sourceImage1 = layerInstruction1.apply(sourceImage: image1, at: time, renderSize: renderSize)
+                let sourceImage1 = layerInstruction1.apply(sourceImage: image1, previousImage: nil, at: time, renderSize: renderSize)
                 if let transition = layerInstruction1.transition {
                     let image2 = generateImage(from: sourcePixel2)
-                    let sourceImage2 = layerInstruction2.apply(sourceImage: image2, at: time, renderSize: renderSize)
+                    let sourceImage2 = layerInstruction2.apply(sourceImage: image2, previousImage: nil, at: time, renderSize: renderSize)
                     
                     let transitionTimeRange = layerInstruction1.timeRange.intersection(layerInstruction2.timeRange)
                     let tweenFactor = factorForTimeInRange(time, range: transitionTimeRange)
@@ -93,24 +93,14 @@ open class VideoCompositionInstruction: NSObject, AVVideoCompositionInstructionP
         } else {
             mainLayerInstructions.forEach { (layerInstruction) in
                 if let sourcePixel = request.sourceFrame(byTrackID: layerInstruction.trackID) {
-                    let sourceImage = layerInstruction.apply(sourceImage: CIImage(cvPixelBuffer: sourcePixel), at: time, renderSize: renderSize)
-                    if let previousImage = image {
-                        image = sourceImage.composited(over: previousImage)
-                    } else {
-                        image = sourceImage
-                    }
+                    image = layerInstruction.apply(sourceImage: CIImage(cvPixelBuffer: sourcePixel), previousImage: image, at: time, renderSize: renderSize)
                 }
             }
         }
         
         otherLayerInstructions.forEach { (layerInstruction) in
             if let sourcePixel = request.sourceFrame(byTrackID: layerInstruction.trackID) {
-                let sourceImage = layerInstruction.apply(sourceImage: CIImage(cvPixelBuffer: sourcePixel), at: time, renderSize: renderSize)
-                if let previousImage = image {
-                    image = sourceImage.composited(over: previousImage)
-                } else {
-                    image = sourceImage
-                }
+                image = layerInstruction.apply(sourceImage: CIImage(cvPixelBuffer: sourcePixel), previousImage: image, at: time, renderSize: renderSize)
             }
         }
         
@@ -160,14 +150,22 @@ open class VideoCompositionLayerInstruction: CustomDebugStringConvertible {
         self.videoCompositionProvider = videoCompositionProvider
     }
     
-    open func apply(sourceImage: CIImage, at time: CMTime, renderSize: CGSize) -> CIImage {
+    open func apply(sourceImage: CIImage, previousImage: CIImage?, at time: CMTime, renderSize: CGSize) -> CIImage {
         var sourceImage = sourceImage
         if let prefferdTransform = prefferdTransform {
             sourceImage = sourceImage.flipYCoordinate().transformed(by: prefferdTransform).flipYCoordinate()
         }
-        let finalImage = videoCompositionProvider.applyEffect(to: sourceImage, at: time, renderSize: renderSize)
-        
-        return finalImage
+        if let videoCompositionProvider = videoCompositionProvider as? CustomSelfCompositedVideoCompositionProvider {
+            let finalImage = videoCompositionProvider.applyEffect(to: sourceImage, previousImage: previousImage, at: time, renderSize: renderSize)
+            return finalImage
+        } else {
+            let finalImage = videoCompositionProvider.applyEffect(to: sourceImage, at: time, renderSize: renderSize)
+            if let previousImage = previousImage {
+                return finalImage.composited(over: previousImage)
+            } else {
+                return finalImage
+            }
+        }
     }
     
     public var debugDescription: String {
@@ -182,4 +180,3 @@ private extension CIImage {
         return transformed(by: flipYTransform)
     }
 }
-

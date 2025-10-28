@@ -36,6 +36,10 @@ public protocol AudioMixProvider {
     func configure(audioMixParameters: AVMutableAudioMixInputParameters)
 }
 
+public protocol CustomSelfCompositedVideoCompositionProvider: AnyObject {
+    func applyEffect(to sourceImage: CIImage, previousImage: CIImage?, at time: CMTime, renderSize: CGSize) -> CIImage
+}
+
 public protocol VideoCompositionProvider: AnyObject {
     
     /// Apply effect to sourceImage
